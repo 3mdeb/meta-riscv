@@ -11,6 +11,10 @@ repos:
       meta:
       meta-poky:
       meta-yocto-bsp:
+    patches:
+      riscv-grub-support:
+        repo: meta-riscv
+        path: patches/0001-grub-Add-support-for-RISC-V.patch
 
   meta-openembedded:
     url: http://git.openembedded.org/meta-openembedded
