@@ -1,0 +1,9 @@
+header:
+  version: 8
+  includes:
+  - kas.yml
+
+distro: riscv-base
+machine: qemuriscv64
+target:
+  - riscv-image-full-cmdline
