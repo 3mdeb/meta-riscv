@@ -1,0 +1,62 @@
+header:
+  version: 8
+
+
+repos:
+
+  poky:
+    url: https://git.yoctoproject.org/git/poky
+    refspec: b569f2a414cfe40cb03b68ecff65b7d38e5f9f73 
+    layers:
+      meta:
+      meta-poky:
+      meta-yocto-bsp:
+    patches:
+      riscv-grub-support:
+        repo: meta-riscv
+        path: patches/0001-grub-Add-support-for-RISC-V.patch
+
+  meta-openembedded:
+    url: http://git.openembedded.org/meta-openembedded
+    refspec: b9dcf17700014dec679307dc1247882dccd439ca
+    layers:
+      meta-oe:
+      meta-networking:
+      meta-multimedia:
+      meta-python:
+
+  meta-riscv:
+
+
+bblayers_conf_header:
+  standard: |
+    POKY_BBLAYERS_CONF_VERSION = "2"
+    BBPATH = "${TOPDIR}"
+    BBFILES ?= ""
+    LICENSE_FLAGS_WHITELIST = "commercial"
+local_conf_header:
+  standard: |
+    CONF_VERSION = "1"
+    PACKAGE_CLASSES = "package_rpm"
+    SDKMACHINE = "x86_64"
+    USER_CLASSES = "buildstats image-mklibs image-prelink"
+    PATCHRESOLVE = "noop"
+    EXTRA_IMAGE_FEATURES_append = " ssh-server-dropbear"
+    EXTRA_IMAGE_FEATURES_append = " package-management"
+    PACKAGECONFIG_append_pn-qemu-native = " sdl"
+    PACKAGECONFIG_append_pn-nativesdk-qemu = " sdl"
+    USER_CLASSES ?= "buildstats buildhistory buildstats-summary image-mklibs image-prelink"
+  debug-tweaks: |
+    EXTRA_IMAGE_FEATURES = "debug-tweaks"
+  diskmon: |
+    BB_DISKMON_DIRS = "\
+        STOPTASKS,${TMPDIR},1G,100K \
+        STOPTASKS,${DL_DIR},1G,100K \
+        STOPTASKS,${SSTATE_DIR},1G,100K \
+        STOPTASKS,/tmp,100M,100K \
+        ABORT,${TMPDIR},100M,1K \
+        ABORT,${DL_DIR},100M,1K \
+        ABORT,${SSTATE_DIR},100M,1K \
+        ABORT,/tmp,10M,1K"
+  oe-layer-priority: |
+    BBFILE_PRIORITY_openembedded-layer = "4"

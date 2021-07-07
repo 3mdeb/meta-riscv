@@ -1,0 +1,22 @@
+header:
+  version: 8
+  includes:
+  - kas.yml
+
+distro: riscv-base
+machine: freedom-u540
+target:
+  - riscv-image-full-cmdline
+
+
+local_conf_header:
+  standard: |
+    IMAGE_FSTYPES += "wic wic.qcow2 wic.gz ext4"
+  wks_file: |
+    WKS_FILE = "freedom-u540-grub-efi.wks"
+    WKS_FILE_DEPENDS ?= " \
+        opensbi \
+        e2fsprogs-native \
+        bmap-tools-native \
+        grub-efi \
+    "

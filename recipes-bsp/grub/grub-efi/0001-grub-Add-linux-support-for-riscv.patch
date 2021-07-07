@@ -1,0 +1,227 @@
+From e3bc8c5b987ab0961c3f8bf47766720ee4c75af3 Mon Sep 17 00:00:00 2001
+From: Norbert Kaminski <norbert.kaminski@3mdeb.com>
+Date: Tue, 24 Nov 2020 11:48:43 +0100
+Subject: [PATCH] grub: Add linux support for riscv
+
+
+Based on Atish Parta patches:
+https://www.mail-archive.com/grub-devel@gnu.org/msg30107.html
+
+Signed-off-by: Norbert Kaminski <norbert.kaminski@3mdeb.com>
+---
+ grub-core/Makefile.core.def             |  8 ++--
+ grub-core/loader/{arm64 => efi}/linux.c |  2 +-
+ grub-core/loader/riscv/linux.c          | 59 -------------------------
+ include/grub/arm/linux.h                |  2 +-
+ include/grub/arm64/linux.h              |  2 +-
+ include/grub/riscv32/linux.h            | 14 +++---
+ include/grub/riscv64/linux.h            | 16 ++++---
+ 7 files changed, 24 insertions(+), 79 deletions(-)
+ rename grub-core/loader/{arm64 => efi}/linux.c (99%)
+ delete mode 100644 grub-core/loader/riscv/linux.c
+
+diff --git a/grub-core/Makefile.core.def b/grub-core/Makefile.core.def
+index 68de5c07c..fed820984 100644
+--- a/grub-core/Makefile.core.def
++++ b/grub-core/Makefile.core.def
+@@ -1813,11 +1813,11 @@ module = {
+   sparc64_ieee1275 = loader/sparc64/ieee1275/linux.c;
+   ia64_efi = loader/ia64/efi/linux.c;
+   arm_coreboot = loader/arm/linux.c;
+-  arm_efi = loader/arm64/linux.c;
++  arm_efi = loader/efi/linux.c;
+   arm_uboot = loader/arm/linux.c;
+-  arm64 = loader/arm64/linux.c;
+-  riscv32 = loader/riscv/linux.c;
+-  riscv64 = loader/riscv/linux.c;
++  arm64 = loader/efi/linux.c;
++  riscv32 = loader/efi/linux.c;
++  riscv64 = loader/efi/linux.c;
+   common = loader/linux.c;
+   common = lib/cmdline.c;
+   enable = noemu;
+diff --git a/grub-core/loader/arm64/linux.c b/grub-core/loader/efi/linux.c
+similarity index 99%
+rename from grub-core/loader/arm64/linux.c
+rename to grub-core/loader/efi/linux.c
+index ef3e9f944..8c7a4963f 100644
+--- a/grub-core/loader/arm64/linux.c
++++ b/grub-core/loader/efi/linux.c
+@@ -51,7 +51,7 @@ static grub_addr_t initrd_end;
+ grub_err_t
+ grub_arch_efi_linux_check_image (struct linux_arch_kernel_header * lh)
+ {
+-  if (lh->magic != GRUB_LINUX_ARMXX_MAGIC_SIGNATURE)
++  if (lh->magic != GRUB_LINUX_ARCH_MAGIC_SIGNATURE)
+     return grub_error(GRUB_ERR_BAD_OS, "invalid magic number");
+ 
+   if ((lh->code0 & 0xffff) != GRUB_PE32_MAGIC)
+diff --git a/grub-core/loader/riscv/linux.c b/grub-core/loader/riscv/linux.c
+deleted file mode 100644
+index d17c488e1..000000000
+--- a/grub-core/loader/riscv/linux.c
++++ /dev/null
+@@ -1,59 +0,0 @@
+-/*
+- *  GRUB  --  GRand Unified Bootloader
+- *  Copyright (C) 2018  Free Software Foundation, Inc.
+- *
+- *  GRUB is free software: you can redistribute it and/or modify
+- *  it under the terms of the GNU General Public License as published by
+- *  the Free Software Foundation, either version 3 of the License, or
+- *  (at your option) any later version.
+- *
+- *  GRUB is distributed in the hope that it will be useful,
+- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- *  GNU General Public License for more details.
+- *
+- *  You should have received a copy of the GNU General Public License
+- *  along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
+- */
+-
+-#include <grub/command.h>
+-#include <grub/dl.h>
+-#include <grub/lib/cmdline.h>
+-
+-GRUB_MOD_LICENSE ("GPLv3+");
+-
+-static grub_err_t
+-grub_cmd_initrd (grub_command_t cmd __attribute__ ((unused)),
+-		 int argc __attribute__ ((unused)),
+-		 char *argv[] __attribute__ ((unused)))
+-{
+-  grub_error (GRUB_ERR_NOT_IMPLEMENTED_YET, N_("Linux not supported yet"));
+-
+-  return grub_errno;
+-}
+-
+-static grub_err_t
+-grub_cmd_linux (grub_command_t cmd __attribute__ ((unused)),
+-		int argc __attribute__ ((unused)),
+-		char *argv[] __attribute__ ((unused)))
+-{
+-  grub_error (GRUB_ERR_NOT_IMPLEMENTED_YET, N_("Linux not supported yet"));
+-
+-  return grub_errno;
+-}
+-
+-static grub_command_t cmd_linux, cmd_initrd;
+-
+-GRUB_MOD_INIT (linux)
+-{
+-  cmd_linux = grub_register_command ("linux", grub_cmd_linux, 0,
+-				     N_("Load Linux."));
+-  cmd_initrd = grub_register_command ("initrd", grub_cmd_initrd, 0,
+-				      N_("Load initrd."));
+-}
+-
+-GRUB_MOD_FINI (linux)
+-{
+-  grub_unregister_command (cmd_linux);
+-  grub_unregister_command (cmd_initrd);
+-}
+diff --git a/include/grub/arm/linux.h b/include/grub/arm/linux.h
+index 2e98a6689..c924d1544 100644
+--- a/include/grub/arm/linux.h
++++ b/include/grub/arm/linux.h
+@@ -35,7 +35,7 @@ struct linux_arm_kernel_header {
+ };
+ 
+ #if defined(__arm__)
+-# define GRUB_LINUX_ARMXX_MAGIC_SIGNATURE GRUB_LINUX_ARM_MAGIC_SIGNATURE
++# define GRUB_LINUX_ARCH_MAGIC_SIGNATURE GRUB_LINUX_ARM_MAGIC_SIGNATURE
+ # define linux_arch_kernel_header linux_arm_kernel_header
+ #endif
+ 
+diff --git a/include/grub/arm64/linux.h b/include/grub/arm64/linux.h
+index 4269adc6d..96aa3bae0 100644
+--- a/include/grub/arm64/linux.h
++++ b/include/grub/arm64/linux.h
+@@ -37,7 +37,7 @@ struct linux_arm64_kernel_header
+ };
+ 
+ #if defined(__aarch64__)
+-# define GRUB_LINUX_ARMXX_MAGIC_SIGNATURE GRUB_LINUX_ARM64_MAGIC_SIGNATURE
++# define GRUB_LINUX_ARCH_MAGIC_SIGNATURE GRUB_LINUX_ARM64_MAGIC_SIGNATURE
+ # define linux_arch_kernel_header linux_arm64_kernel_header
+ #endif
+ 
+diff --git a/include/grub/riscv32/linux.h b/include/grub/riscv32/linux.h
+index 512b777c8..e42189d4d 100644
+--- a/include/grub/riscv32/linux.h
++++ b/include/grub/riscv32/linux.h
+@@ -19,23 +19,25 @@
+ #ifndef GRUB_RISCV32_LINUX_HEADER
+ #define GRUB_RISCV32_LINUX_HEADER 1
+ 
+-#define GRUB_LINUX_RISCV_MAGIC_SIGNATURE 0x52534356 /* 'RSCV' */
++#define GRUB_LINUX_RISCV_MAGIC_SIGNATURE 0x05435352 /* 'RSC\0x5' */
+ 
+ /* From linux/Documentation/riscv/booting.txt */
+ struct linux_riscv_kernel_header
+ {
+   grub_uint32_t code0;		/* Executable code */
+   grub_uint32_t code1;		/* Executable code */
+-  grub_uint64_t text_offset;	/* Image load offset */
+-  grub_uint64_t res0;		/* reserved */
+-  grub_uint64_t res1;		/* reserved */
++  grub_uint64_t text_offset;   /* Image load offset, little endian */
++  grub_uint64_t image_size;    /* Effective Image size, little endian */
++  grub_uint64_t flags;         /* kernel flags, little endian */
++  grub_uint32_t version;       /* Version of this header */
++  grub_uint32_t res1;          /* reserved */
+   grub_uint64_t res2;		/* reserved */
+   grub_uint64_t res3;		/* reserved */
+-  grub_uint64_t res4;		/* reserved */
+-  grub_uint32_t magic;		/* Magic number, little endian, "RSCV" */
++  grub_uint32_t magic;         /* Magic number, little endian, "RSC\x05" */
+   grub_uint32_t hdr_offset;	/* Offset of PE/COFF header */
+ };
+ 
+ #define linux_arch_kernel_header linux_riscv_kernel_header
++#define GRUB_LINUX_ARCH_MAGIC_SIGNATURE GRUB_LINUX_RISCV_MAGIC_SIGNATURE
+ 
+ #endif /* ! GRUB_RISCV32_LINUX_HEADER */
+diff --git a/include/grub/riscv64/linux.h b/include/grub/riscv64/linux.h
+index 3630c30fb..80235f18e 100644
+--- a/include/grub/riscv64/linux.h
++++ b/include/grub/riscv64/linux.h
+@@ -19,25 +19,27 @@
+ #ifndef GRUB_RISCV64_LINUX_HEADER
+ #define GRUB_RISCV64_LINUX_HEADER 1
+ 
+-#define GRUB_LINUX_RISCV_MAGIC_SIGNATURE 0x52534356 /* 'RSCV' */
++#define GRUB_LINUX_RISCV_MAGIC_SIGNATURE 0x05435352 /* 'RSC\0x5' */
+ 
+ #define GRUB_EFI_PE_MAGIC	0x5A4D
+ 
+-/* From linux/Documentation/riscv/booting.txt */
++/* From linux/Documentation/riscv/boot-image-header.rst */
+ struct linux_riscv_kernel_header
+ {
+   grub_uint32_t code0;		/* Executable code */
+   grub_uint32_t code1;		/* Executable code */
+-  grub_uint64_t text_offset;	/* Image load offset */
+-  grub_uint64_t res0;		/* reserved */
+-  grub_uint64_t res1;		/* reserved */
++  grub_uint64_t text_offset;   /* Image load offset, little endian */
++  grub_uint64_t image_size;    /* Effective Image size, little endian */
++  grub_uint64_t flags;         /* kernel flags, little endian */
++  grub_uint32_t version;       /* Version of this header */
++  grub_uint32_t res1;          /* reserved */
+   grub_uint64_t res2;		/* reserved */
+   grub_uint64_t res3;		/* reserved */
+-  grub_uint64_t res4;		/* reserved */
+-  grub_uint32_t magic;		/* Magic number, little endian, "RSCV" */
++  grub_uint32_t magic;         /* Magic number, little endian, "RSC\x05" */
+   grub_uint32_t hdr_offset;	/* Offset of PE/COFF header */
+ };
+ 
+ #define linux_arch_kernel_header linux_riscv_kernel_header
++#define GRUB_LINUX_ARCH_MAGIC_SIGNATURE GRUB_LINUX_RISCV_MAGIC_SIGNATURE
+ 
+ #endif /* ! GRUB_RISCV64_LINUX_HEADER */
+-- 
+2.25.1
+
